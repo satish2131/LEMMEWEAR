@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let products = [];
+    let products: any[] = [];
     try {
       products = await Product.find(
         { $text: { $search: q }, inStock: true },
