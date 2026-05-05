@@ -76,9 +76,9 @@ function ShirtMesh({
    */
   const FRONT_Z = 0.20;
   const BACK_Z = -0.20;
-  const CHEST_Y = -0.38;
+  const CHEST_Y = -0.50;
   const PW = 0.80;
-  const PH = 0.55;
+  const PH = 1.00;
 
   return (
     <group ref={group}>

@@ -16,98 +16,76 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { BookmarkPlus } from "lucide-react";
+import { buildDesignTextures } from "@/lib/buildDesignTextures";
 
 /* Dynamic import — disables SSR for the heavy Three.js Canvas */
-const ShirtViewer = dynamic(() => import("@/components/site/ShirtViewer"), { ssr: false });
+const Viewer = dynamic(() => import("@/components/Customizer/Viewer"), { ssr: false });
+import { ShirtType } from "@/lib/constants/modelConfig";
 
 /* ─── Constants ─── */
 const PALETTE = [
-  { name: "White",  hex: "#f5f5f5" },
-  { name: "Royal",  hex: "#7c3aed" },
-  { name: "Plum",   hex: "#5b21b6" },
-  { name: "Onyx",   hex: "#1a1a1a" },
-  { name: "Navy",   hex: "#1e3a5f" },
-  { name: "Rose",   hex: "#f43f5e" },
-  { name: "Sage",   hex: "#4ade80" },
-  { name: "Sky",    hex: "#38bdf8" },
+  { name: "White", hex: "#f5f5f5" },
+  { name: "Royal", hex: "#7c3aed" },
+  { name: "Plum", hex: "#5b21b6" },
+  { name: "Onyx", hex: "#1a1a1a" },
+  { name: "Navy", hex: "#1e3a5f" },
+  { name: "Rose", hex: "#f43f5e" },
+  { name: "Sage", hex: "#4ade80" },
+  { name: "Sky", hex: "#38bdf8" },
 ];
 
 const FONTS = [
-  { name: "Sans",  value: "Inter, Arial, sans-serif" },
-  { name: "Serif", value: "Playfair Display, Georgia, serif" },
-  { name: "Mono",  value: "Courier New, monospace" },
+  { name: "Arial", value: "Arial, sans-serif" },
+  { name: "Helvetica", value: "'Helvetica Neue', Helvetica, Arial, sans-serif" },
+  { name: "Verdana", value: "Verdana, Geneva, sans-serif" },
+  { name: "Trebuchet MS", value: "'Trebuchet MS', sans-serif" },
+  { name: "Tahoma", value: "Tahoma, Geneva, sans-serif" },
+  { name: "Segoe UI", value: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif" },
+  { name: "Calibri", value: "Calibri, sans-serif" },
+  { name: "Candara", value: "Candara, sans-serif" },
+  { name: "Impact", value: "Impact, Charcoal, sans-serif" },
+  { name: "Arial Black", value: "'Arial Black', Gadget, sans-serif" },
+  { name: "Times New Roman", value: "'Times New Roman', Times, serif" },
+  { name: "Georgia", value: "Georgia, serif" },
+  { name: "Garamond", value: "Garamond, serif" },
+  { name: "Palatino", value: "'Palatino Linotype', 'Book Antiqua', Palatino, serif" },
+  { name: "Bookman", value: "'Bookman Old Style', serif" },
+  { name: "Baskerville", value: "Baskerville, 'Baskerville Old Face', serif" },
+  { name: "Courier New", value: "'Courier New', Courier, monospace" },
+  { name: "Lucida Console", value: "'Lucida Console', Monaco, monospace" },
+  { name: "Consolas", value: "Consolas, monospace" },
+  { name: "Monaco", value: "Monaco, monospace" },
+  { name: "Brush Script", value: "'Brush Script MT', cursive" },
+  { name: "Comic Sans", value: "'Comic Sans MS', cursive, sans-serif" },
+  { name: "Papyrus", value: "Papyrus, fantasy" },
+  { name: "Luminari", value: "Luminari, fantasy" },
+  { name: "Chalkduster", value: "Chalkduster, fantasy" },
+  { name: "Blippo", value: "Blippo, fantasy" },
+  { name: "Stencil", value: "Stencil, fantasy" },
+  { name: "Copperplate", value: "Copperplate, fantasy" },
+  { name: "Didot", value: "Didot, serif" },
+  { name: "Century Gothic", value: "'Century Gothic', sans-serif" },
+  { name: "Franklin Gothic", value: "'Franklin Gothic Medium', sans-serif" },
+  { name: "Futura", value: "Futura, sans-serif" },
+  { name: "Gill Sans", value: "'Gill Sans', sans-serif" },
+  { name: "Rockwell", value: "Rockwell, serif" },
+  { name: "Cambria", value: "Cambria, serif" },
+  { name: "Constantia", value: "Constantia, serif" },
+  { name: "Corbel", value: "Corbel, sans-serif" },
+  { name: "Hoefler Text", value: "'Hoefler Text', serif" },
+  { name: "Avant Garde", value: "'Avant Garde', sans-serif" },
+  { name: "Optima", value: "Optima, sans-serif" },
+  { name: "Playfair", value: "'Playfair Display', Georgia, serif" },
+  { name: "Inter", value: "Inter, Arial, sans-serif" },
+  { name: "Roboto", value: "Roboto, sans-serif" },
+  { name: "Open Sans", value: "'Open Sans', sans-serif" },
+  { name: "Lato", value: "Lato, sans-serif" },
+  { name: "Montserrat", value: "Montserrat, sans-serif" },
+  { name: "Oswald", value: "Oswald, sans-serif" },
+  { name: "Raleway", value: "Raleway, sans-serif" },
+  { name: "Nunito", value: "Nunito, sans-serif" },
+  { name: "Ubuntu", value: "Ubuntu, sans-serif" }
 ];
-
-/* ─── Draw design content into a canvas context ─── */
-function drawDesign(ctx: CanvasRenderingContext2D, size: number, opts: {
-  text: string; font: string; textColor: string;
-  scale: number; posY: number; uploadedImg: HTMLImageElement | null;
-}) {
-  const { text, font, textColor, scale, posY, uploadedImg } = opts;
-
-  if (uploadedImg) {
-    const imgSize = Math.round(size * 0.60 * scale);
-    ctx.drawImage(uploadedImg, size / 2 - imgSize / 2, size / 2 + posY * 200 - imgSize / 2, imgSize, imgSize);
-  }
-
-  if (text.trim()) {
-    const px = Math.round(80 * scale);
-    const safeFont = font.includes("Playfair")
-      ? `"Playfair Display", Georgia, serif`
-      : font.includes("Courier")
-        ? `"Courier New", Courier, monospace`
-        : `"Inter", Arial, sans-serif`;
-    ctx.save();
-    ctx.font = `700 ${px}px ${safeFont}`;
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.shadowColor = "rgba(0,0,0,0.25)"; ctx.shadowBlur = px * 0.1;
-    ctx.fillStyle = textColor;
-    const lines = text.split("\n");
-    const lh = px * 1.22;
-    const baseY = uploadedImg
-      ? size / 2 + posY * 200 + Math.round(size * 0.30 * scale)
-      : size / 2 + posY * 200;
-    const startY = baseY - ((lines.length - 1) * lh) / 2;
-    lines.forEach((l, i) => ctx.fillText(l, size / 2, startY + i * lh));
-    ctx.restore();
-  }
-}
-
-function makeTexture(canvas: HTMLCanvasElement): THREE.CanvasTexture {
-  const t = new THREE.CanvasTexture(canvas);
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.flipY = true;   // standard WebGL orientation — text upright on plane meshes
-  t.needsUpdate = true;
-  return t;
-}
-
-/* ─── Build front + back design textures ─── */
-export function buildDesignTextures(opts: {
-  text: string; font: string; textColor: string;
-  scale: number; posY: number; uploadedImg: HTMLImageElement | null;
-}): { front: THREE.CanvasTexture; back: THREE.CanvasTexture } {
-  const size = 1024;
-
-  // FRONT: draw normally
-  const frontCanvas = document.createElement("canvas");
-  frontCanvas.width = size; frontCanvas.height = size;
-  const fCtx = frontCanvas.getContext("2d")!;
-  fCtx.clearRect(0, 0, size, size);
-  drawDesign(fCtx, size, opts);
-
-  // BACK: draw with horizontal mirror so it reads correctly from behind
-  const backCanvas = document.createElement("canvas");
-  backCanvas.width = size; backCanvas.height = size;
-  const bCtx = backCanvas.getContext("2d")!;
-  bCtx.clearRect(0, 0, size, size);
-  bCtx.save();
-  bCtx.translate(size, 0);
-  bCtx.scale(-1, 1);
-  drawDesign(bCtx, size, opts);
-  bCtx.restore();
-
-  return { front: makeTexture(frontCanvas), back: makeTexture(backCanvas) };
-}
 
 /* ─── Page ─── */
 export default function Customize() {
@@ -117,21 +95,33 @@ export default function Customize() {
   const [text, setText] = useState("YOUR\nIDENTITY");
   const [font, setFont] = useState(FONTS[0].value);
   const [textColor, setTextColor] = useState("#ffffff");
+  const [shirtType, setShirtType] = useState<ShirtType>("regular");
   const [shirtColor, setShirtColor] = useState(PALETTE[1].hex);
-  const [scale, setScale] = useState(1);
-  const [posY, setPosY] = useState(0);
+  const [textScale, setTextScale] = useState(1);
+  const [textPosY, setTextPosY] = useState(0);
+  const [imgScale, setImgScale] = useState(1);
+  const [imgPosY, setImgPosY] = useState(0);
   const [autoRotate, setAutoRotate] = useState(true);
   const [uploadedImg, setUploadedImg] = useState<HTMLImageElement | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [imgShowFront, setImgShowFront] = useState(true);
+  const [imgShowBack, setImgShowBack] = useState(true);
+  const [textShowFront, setTextShowFront] = useState(true);
+  const [textShowBack, setTextShowBack] = useState(true);
   const [designTexFront, setDesignTexFront] = useState<THREE.CanvasTexture | null>(null);
   const [designTexBack, setDesignTexBack] = useState<THREE.CanvasTexture | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const resetCameraRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    const { front, back } = buildDesignTextures({ text, font, textColor, scale, posY, uploadedImg });
+    const { front, back } = buildDesignTextures({
+      text, font, textColor, textScale, textPosY,
+      imgScale, imgPosY, uploadedImg,
+      imgShowFront, imgShowBack, textShowFront, textShowBack,
+    });
     setDesignTexFront(old => { old?.dispose(); return front; });
     setDesignTexBack(old => { old?.dispose(); return back; });
-  }, [text, font, textColor, scale, posY, uploadedImg]);
+  }, [text, font, textColor, textScale, textPosY, imgScale, imgPosY, uploadedImg, imgShowFront, imgShowBack, textShowFront, textShowBack]);
 
   const handleSaveDesign = async () => {
     if (!user?.email) {
@@ -148,7 +138,7 @@ export default function Customize() {
           userEmail: user.email,
           name: text.trim() || "My Custom Design",
           preview: preview || "/assets/hero-tshirt.jpg",
-          config: { text, font, textColor, shirtColor, scale, posY }
+          config: { text, font, textColor, shirtColor, textScale, textPosY, imgScale, imgPosY, imgShowFront, imgShowBack, textShowFront, textShowBack }
         })
       });
       const data = await res.json();
@@ -207,9 +197,9 @@ export default function Customize() {
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { icon: ImageIcon, title: "Upload Image", desc: "Use your own art or photo" },
-                  { icon: Type,      title: "Add Text",     desc: "Express your story in words" },
-                  { icon: Palette,   title: "Pick Colors",  desc: "Endless palette options" },
-                  { icon: Move3d,    title: "3D Preview",   desc: "Drag to rotate live" },
+                  { icon: Type, title: "Add Text", desc: "Express your story in words" },
+                  { icon: Palette, title: "Pick Colors", desc: "Endless palette options" },
+                  { icon: Move3d, title: "3D Preview", desc: "Drag to rotate live" },
                 ].map(({ icon: Icon, title, desc }) => (
                   <div key={title} className="rounded-xl bg-background/10 backdrop-blur border border-background/20 p-4 hover:bg-background/20 transition-smooth">
                     <div className="h-8 w-8 grid place-items-center rounded-lg bg-background/20 mb-2">
@@ -223,32 +213,37 @@ export default function Customize() {
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-[1fr_360px] gap-6">
+          <div className="grid lg:grid-cols-[1fr_340px] gap-6">
 
-            {/* 3D Viewport */}
-            <div className="relative rounded-3xl overflow-hidden border border-border shadow-card lg:h-[680px] aspect-square lg:aspect-auto"
-              style={{
-                background: "radial-gradient(ellipse at 55% 35%, #e8e1fa 0%, #f0ecfc 45%, #e4dff5 100%)",
-                contain: "strict",   /* CSS containment prevents 3D canvas overflow */
-              }}>
-              <div className="absolute inset-0 pointer-events-none"
-                style={{ background: "radial-gradient(70% 60% at 50% 40%, rgba(124,58,237,0.06) 0%, transparent 70%)" }} />
+            {/* 3D Viewport — sticky so it stays in view while scrolling controls */}
+            <div className="lg:sticky lg:top-24 lg:self-start">
+              <div className="relative rounded-3xl overflow-hidden border border-border shadow-card h-[420px] lg:h-[600px]"
+                style={{
+                  background: "radial-gradient(ellipse at 55% 35%, #e8e1fa 0%, #f0ecfc 45%, #e4dff5 100%)",
+                }}>
+                <div className="absolute inset-0 pointer-events-none"
+                  style={{ background: "radial-gradient(70% 60% at 50% 40%, rgba(124,58,237,0.06) 0%, transparent 70%)" }} />
 
-              <ShirtViewer
-                shirtColor={shirtColor}
-                designTexFront={designTexFront}
-                designTexBack={designTexBack}
-                autoRotate={autoRotate}
-                onInteract={() => setAutoRotate(false)}
-              />
+                <Viewer
+                  shirtType={shirtType}
+                  color={shirtColor}
+                  designTexFront={designTexFront}
+                  designTexBack={designTexBack}
+                  showFront={imgShowFront || textShowFront}
+                  showBack={imgShowBack || textShowBack}
+                  autoRotate={autoRotate}
+                  onInteract={() => setAutoRotate(false)}
+                  onResetRef={resetCameraRef}
+                />
 
-              <button onClick={() => setAutoRotate(v => !v)}
-                className="absolute top-4 right-4 h-10 w-10 grid place-items-center rounded-full bg-white/80 backdrop-blur shadow-soft hover:bg-white transition-smooth z-10"
-                aria-label="Toggle rotation">
-                <RotateCw className={`h-4 w-4 ${autoRotate ? "text-primary" : "text-muted-foreground"}`} />
-              </button>
-              <div className="absolute bottom-4 left-4 rounded-full bg-white/80 backdrop-blur px-3 py-1.5 text-xs font-medium shadow-soft text-foreground/70 z-10">
-                Drag to rotate · Scroll to zoom
+                <button onClick={() => { resetCameraRef.current?.(); setAutoRotate(true); }}
+                  className="absolute top-4 right-4 h-10 w-10 grid place-items-center rounded-full bg-white/80 backdrop-blur shadow-soft hover:bg-white transition-smooth z-10"
+                  aria-label="Reset view">
+                  <RotateCw className="h-4 w-4 text-primary" />
+                </button>
+                <div className="absolute bottom-4 left-4 rounded-full bg-white/80 backdrop-blur px-3 py-1.5 text-xs font-medium shadow-soft text-foreground/70 z-10">
+                  Drag to rotate · Scroll to zoom
+                </div>
               </div>
             </div>
 
@@ -276,17 +271,73 @@ export default function Customize() {
                     <span className="text-xs text-muted-foreground">Click to upload image</span>
                   </label>
                 )}
+
+                {/* Image Placement Checkboxes */}
+                <div className="flex items-center gap-6 mt-4 pl-1 mb-4">
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <input type="checkbox" checked={imgShowFront} onChange={(e) => setImgShowFront(e.target.checked)} className="h-4 w-4 rounded border-border text-primary focus:ring-primary transition-smooth" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-foreground transition-smooth">Front Side</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <input type="checkbox" checked={imgShowBack} onChange={(e) => setImgShowBack(e.target.checked)} className="h-4 w-4 rounded border-border text-primary focus:ring-primary transition-smooth" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-foreground transition-smooth">Back Side</span>
+                  </label>
+                </div>
+
+                {preview && (
+                  <div className="mt-4 p-3 rounded-xl border border-border bg-accent/30 space-y-4">
+                    <div>
+                      <div className="flex justify-between mb-1.5">
+                        <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Image Size</Label>
+                        <span className="text-[10px] text-muted-foreground">{imgScale.toFixed(2)}x</span>
+                      </div>
+                      <Slider value={[imgScale]} onValueChange={(v) => setImgScale(v[0])} min={0.3} max={2} step={0.05} />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1.5">
+                        <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Image Position Y</Label>
+                        <span className="text-[10px] text-muted-foreground">{imgPosY.toFixed(2)}</span>
+                      </div>
+                      <Slider value={[imgPosY]} onValueChange={(v) => setImgPosY(v[0])} min={-1} max={1} step={0.05} />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Shirt Type */}
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Apparel Type</Label>
+                <div className="flex gap-2 mt-3 mb-4">
+                  {(["regular", "oversized", "hoodie"] as ShirtType[]).map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setShirtType(type)}
+                      className={`flex-1 capitalize h-10 rounded-xl border-2 text-xs font-semibold transition-smooth ${
+                        shirtType === type
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border hover:bg-secondary/50 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Shirt Color */}
               <div>
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Shirt Color</Label>
-                <div className="grid grid-cols-4 gap-2 mt-3">
+                <div className="grid grid-cols-4 gap-2 mt-3 mb-4">
                   {PALETTE.map((c) => (
                     <button key={c.hex} onClick={() => setShirtColor(c.hex)} title={c.name}
                       className={`h-10 rounded-xl border-2 transition-smooth ${shirtColor === c.hex ? "border-primary shadow-glow scale-110" : "border-border hover:scale-105"}`}
                       style={{ backgroundColor: c.hex }} aria-label={c.name} />
                   ))}
+                </div>
+                <div className="flex items-center gap-3">
+                  <input type="color" value={shirtColor} onChange={(e) => setShirtColor(e.target.value)}
+                    className="h-10 w-14 rounded-lg cursor-pointer border border-border" title="Custom Color" />
+                  <Input value={shirtColor} onChange={(e) => setShirtColor(e.target.value)} className="font-mono text-xs uppercase" />
                 </div>
               </div>
 
@@ -296,15 +347,27 @@ export default function Customize() {
                 <textarea id="design-text" value={text} onChange={(e) => setText(e.target.value)} rows={2}
                   className="mt-2 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
                   placeholder="Type your message..." />
+                {/* Text Placement Checkboxes */}
+                <div className="flex items-center gap-6 mt-3 pl-1">
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <input type="checkbox" checked={textShowFront} onChange={(e) => setTextShowFront(e.target.checked)} className="h-4 w-4 rounded border-border text-primary focus:ring-primary transition-smooth" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-foreground transition-smooth">Front Side</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <input type="checkbox" checked={textShowBack} onChange={(e) => setTextShowBack(e.target.checked)} className="h-4 w-4 rounded border-border text-primary focus:ring-primary transition-smooth" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-foreground transition-smooth">Back Side</span>
+                  </label>
+                </div>
               </div>
 
               {/* Font */}
               <div>
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Font</Label>
-                <div className="grid grid-cols-3 gap-2 mt-3">
+                <div className="grid grid-cols-2 gap-2 mt-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                   {FONTS.map((f) => (
                     <button key={f.name} onClick={() => setFont(f.value)} style={{ fontFamily: f.value }}
-                      className={`h-10 rounded-lg border text-sm font-semibold transition-smooth ${font === f.value ? "border-primary bg-accent text-primary" : "border-border hover:bg-secondary"}`}>
+                      className={`h-10 truncate px-2 rounded-lg border text-sm font-semibold transition-smooth ${font === f.value ? "border-primary bg-accent text-primary" : "border-border hover:bg-secondary"}`}
+                      title={f.name}>
                       {f.name}
                     </button>
                   ))}
@@ -314,29 +377,28 @@ export default function Customize() {
               {/* Text Color */}
               <div>
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Text Color</Label>
-                <div className="mt-3 flex items-center gap-3">
+                <div className="mt-3 flex items-center gap-3 mb-4">
                   <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)}
                     className="h-10 w-14 rounded-lg cursor-pointer border border-border" />
                   <Input value={textColor} onChange={(e) => setTextColor(e.target.value)} className="font-mono text-xs" />
                 </div>
-              </div>
 
-              {/* Size */}
-              <div>
-                <div className="flex justify-between mb-2">
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Design Size</Label>
-                  <span className="text-xs text-muted-foreground">{scale.toFixed(2)}x</span>
+                <div className="p-3 rounded-xl border border-border bg-accent/30 space-y-4">
+                  <div>
+                    <div className="flex justify-between mb-1.5">
+                      <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Text Size</Label>
+                      <span className="text-[10px] text-muted-foreground">{textScale.toFixed(2)}x</span>
+                    </div>
+                    <Slider value={[textScale]} onValueChange={(v) => setTextScale(v[0])} min={0.3} max={2} step={0.05} />
+                  </div>
+                  <div>
+                    <div className="flex justify-between mb-1.5">
+                      <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Text Position Y</Label>
+                      <span className="text-[10px] text-muted-foreground">{textPosY.toFixed(2)}</span>
+                    </div>
+                    <Slider value={[textPosY]} onValueChange={(v) => setTextPosY(v[0])} min={-1} max={1} step={0.05} />
+                  </div>
                 </div>
-                <Slider value={[scale]} onValueChange={(v) => setScale(v[0])} min={0.3} max={2} step={0.05} />
-              </div>
-
-              {/* Position */}
-              <div>
-                <div className="flex justify-between mb-2">
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Position Y</Label>
-                  <span className="text-xs text-muted-foreground">{posY.toFixed(2)}</span>
-                </div>
-                <Slider value={[posY]} onValueChange={(v) => setPosY(v[0])} min={-1} max={1} step={0.05} />
               </div>
 
               {/* CTA */}
@@ -358,7 +420,7 @@ export default function Customize() {
                       const cartArray = Array.isArray(existing) ? existing : [];
                       cartArray.push(newItem);
                       localStorage.setItem('lemmewear_cart', JSON.stringify(cartArray));
-                    } catch(e) {
+                    } catch (e) {
                       console.error("Failed to add to cart", e);
                     }
                     toast.success("Added to cart!", { description: "Your custom design is saved." });
@@ -391,6 +453,7 @@ export default function Customize() {
                 </Button>
               </div>
             </aside>
+
           </div>
         </div>
       </main>

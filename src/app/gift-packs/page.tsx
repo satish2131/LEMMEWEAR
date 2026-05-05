@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from 'next/navigation';;
+import { useRouter } from 'next/navigation';
 import { Navbar } from "@/components/site/Navbar";
 import { Footer } from "@/components/site/Footer";
+import { GiftPacks } from "@/components/site/GiftPacks";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, Plus, Check, Gift, ChevronRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -126,27 +127,19 @@ const GiftBoxBuilder = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <div className="pt-16" />      <main className="flex-1">
-        {/* Hero */}
-        <section className="relative overflow-hidden border-b border-border/50">
-          <div className="absolute inset-0 gradient-hero opacity-40" aria-hidden />
-          <div className="container relative py-12 lg:py-20">
-            <p className="text-sm font-medium text-primary mb-3">Premium Gifting</p>
-            <h1 className="text-4xl lg:text-6xl font-bold mb-4">Build Your <span className="gradient-text">Gift Box</span></h1>
-            <p className="text-muted-foreground max-w-xl">Create a thoughtful, curated gift experience — choose a t-shirt, add accessories, chocolates, and premium packaging.</p>
-          </div>
-        </section>
+        <GiftPacks />
 
-        <section className="container py-10">
+        <section className="container py-10" id="builder">
           {/* Stepper */}
           <div className="flex items-center gap-1 mb-10 overflow-x-auto pb-2">
             {STEPS.map((s, i) => (
               <div key={s} className="flex items-center gap-1 shrink-0">
                 <button
-                  onClick={() => i < step && setStep(i)}
+                  onClick={() => setStep(i)}
                   className={`flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full transition-smooth ${
                     i === step ? "bg-primary text-primary-foreground shadow-glow"
                     : i < step ? "bg-primary/10 text-primary"
-                    : "bg-secondary text-muted-foreground"
+                    : "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
                   }`}
                 >
                   {i < step ? <Check className="h-3 w-3" /> : <span>{i + 1}</span>}
