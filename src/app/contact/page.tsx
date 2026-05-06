@@ -222,7 +222,7 @@ export default function Contact() {
                       aria-label={label}
                       className={`h-10 w-10 grid place-items-center rounded-full border border-border transition-colors ${color}`}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon />
                     </a>
                   ))}
                 </div>

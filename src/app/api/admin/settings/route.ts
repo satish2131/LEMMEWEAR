@@ -27,10 +27,11 @@ export async function GET() {
       });
     }
 
-    // Ensure giftBuilder is always present
+    // Ensure giftBuilder is always present even if the DB doc predates this field
+    const settingsObj = settings as unknown as Record<string, unknown>;
     const data = {
-      ...settings,
-      giftBuilder: (settings as Record<string, unknown>).giftBuilder ?? { tshirts: [], accessories: [], chocolates: [], packagings: [] },
+      ...settingsObj,
+      giftBuilder: settingsObj.giftBuilder ?? { tshirts: [], accessories: [], chocolates: [], packagings: [] },
     };
 
     return Response.json({ success: true, data });

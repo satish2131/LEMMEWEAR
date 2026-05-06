@@ -45,9 +45,10 @@ export async function GET() {
     }
 
     // Ensure giftBuilder is always present even if the DB doc predates this field
+    const settingsObj = settings as unknown as Record<string, unknown>;
     const data = {
-      ...settings,
-      giftBuilder: (settings as Record<string, unknown>).giftBuilder ?? EMPTY_BUILDER,
+      ...settingsObj,
+      giftBuilder: settingsObj.giftBuilder ?? EMPTY_BUILDER,
     };
 
     return Response.json({ success: true, data });
