@@ -3,7 +3,12 @@
  * All API calls go through these functions for consistent error handling.
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "";
+// Always use relative URLs in the browser — works on any domain (localhost or production).
+// Only use absolute URL for server-side calls where relative URLs don't work.
+const BASE_URL =
+  typeof window !== "undefined"
+    ? "" // browser: relative URL → always correct domain
+    : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"; // server-side
 
 interface ApiResponse<T> {
   success: boolean;
