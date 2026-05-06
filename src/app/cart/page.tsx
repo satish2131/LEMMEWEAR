@@ -14,8 +14,6 @@ const horizonImg = "/assets/tshirt-horizon.jpg";
 
 const initial: any[] = [];
 
-const COUPONS: Record<string, number> = { LUME10: 10, IDENTITY20: 20, FIRSTORDER: 15 };
-
 const packagingOptions = [
   { id: "standard", label: "Standard Packaging", price: 0, desc: "Eco-friendly paper bag" },
   { id: "premium", label: "Premium Gift Box", price: 99, desc: "Rigid box with ribbon & tissue" },
@@ -28,6 +26,7 @@ const Cart = () => {
   const [coupon, setCoupon] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [discountPct, setDiscountPct] = useState(0);
+  const [discountFixed, setDiscountFixed] = useState(0);
   const [giftMessage, setGiftMessage] = useState("");
   const [packaging, setPackaging] = useState("standard");
 
@@ -62,7 +61,9 @@ const Cart = () => {
 
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const packagingCost = packagingOptions.find((p) => p.id === packaging)?.price ?? 0;
-  const discountAmt = Math.round(subtotal * (discountPct / 100));
+  const discountAmt = discountFixed > 0
+    ? Math.min(discountFixed, subtotal)
+    : Math.round(subtotal * (discountPct / 100));
   const total = subtotal - discountAmt + packagingCost;
 
   const update = (id: number, d: number) => {
@@ -89,14 +90,30 @@ const Cart = () => {
     } catch(e) {}
   };
 
-  const applyCoupon = () => {
+  const applyCoupon = async () => {
     const code = coupon.trim().toUpperCase();
-    if (COUPONS[code]) {
-      setAppliedCoupon(code);
-      setDiscountPct(COUPONS[code]);
-      toast.success(`Coupon applied! ${COUPONS[code]}% off`);
-    } else {
-      toast.error("Invalid coupon code");
+    if (!code) return;
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, cartTotal: subtotal }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setAppliedCoupon(code);
+        setDiscountPct(json.data.type === "percentage" ? json.data.value : 0);
+        setDiscountFixed(json.data.type === "fixed" ? json.data.value : 0);
+        toast.success(
+          json.data.type === "percentage"
+            ? `Coupon applied! ${json.data.value}% off`
+            : `Coupon applied! ₹${json.data.value} off`
+        );
+      } else {
+        toast.error(json.error || "Invalid coupon code");
+      }
+    } catch {
+      toast.error("Could not validate coupon. Try again.");
     }
     setCoupon("");
   };
@@ -104,6 +121,7 @@ const Cart = () => {
   const removeCoupon = () => {
     setAppliedCoupon(null);
     setDiscountPct(0);
+    setDiscountFixed(0);
     toast("Coupon removed");
   };
 

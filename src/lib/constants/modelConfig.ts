@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 
-export type ShirtType = 'regular' | 'oversized' | 'hoodie';
+export type ShirtType = 'regular' | 'oversized' | 'hoodie' | 'polo';
 
 export const SHIRT_MODELS: Record<ShirtType, string> = {
   regular: '/models/shirt_baked.glb',
   oversized: '/models/oversized_t-shirt.glb',
   hoodie: '/models/hoodie.glb',
+  polo: '/models/polo_tshirt.glb',
 };
 
 // Target world-space decal size: 0.55 x 0.55 for all models
@@ -50,6 +51,22 @@ export const MODEL_CONFIG: Record<ShirtType, {
     decal: {
       position: [0, 0.551, 0.08],
       scale: [0.247, 0.247]
+    }
+  },
+  // polo_tshirt: raw bbox 60×167×33 units, root matrix [x,y,z]→[x,z,-y],
+  // node4 scale=0.001, node6 scale=10 → effective internal scale=0.01
+  // rendered height = 167 * 0.01 = 1.67m
+  // target same visual size as hoodie → group scale = 2.223 * (0.386/1.67) ≈ 0.514
+  // world center after internal transforms: y = 82.6 * 0.01 = 0.826
+  // position.y offset = same pattern as hoodie/oversized = -1.257 (empirical match)
+  polo: {
+    position: [0.000, -0.425, 0.047],
+    rotation: [0, 0, 0],
+    scale: 0.75,
+    decal: {
+      // chest area: raw Y≈120 → local 1.2, front Z≈16.9 → local 0.169
+      position: [0, 1.2, 0.169],
+      scale: [0.38, 0.38]
     }
   }
 };

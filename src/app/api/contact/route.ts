@@ -1,5 +1,6 @@
 import dbConnect from "@/lib/db";
 import Contact from "@/models/Contact";
+import SupportTicket from "@/models/SupportTicket";
 
 // POST /api/contact — Submit contact form
 export async function POST(request: Request) {
@@ -25,12 +26,27 @@ export async function POST(request: Request) {
       );
     }
 
+    // Save to Contact collection
     const contact = await Contact.create({
       name,
       email,
       subject: subject || "other",
       message,
       status: "new",
+    });
+
+    // Also create a SupportTicket so it shows in the admin support panel
+    const ticketNumber = `TK-${Date.now().toString(36).toUpperCase()}`;
+    const subjectLabel = subject && subject !== "other" ? subject : "General Enquiry";
+
+    await SupportTicket.create({
+      ticketNumber,
+      customer: name,
+      email,
+      subject: subjectLabel,
+      description: message,
+      priority: "Medium",
+      status: "Open",
     });
 
     return Response.json(

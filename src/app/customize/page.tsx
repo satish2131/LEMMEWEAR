@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { BookmarkPlus } from "lucide-react";
 import { buildDesignTextures } from "@/lib/buildDesignTextures";
+import CanvaColorPicker from "@/components/ui/CanvaColorPicker";
 
 /* Dynamic import — disables SSR for the heavy Three.js Canvas */
 const Viewer = dynamic(() => import("@/components/Customizer/Viewer"), { ssr: false });
@@ -97,19 +98,21 @@ export default function Customize() {
   const [textColor, setTextColor] = useState("#ffffff");
   const [shirtType, setShirtType] = useState<ShirtType>("regular");
   const [shirtColor, setShirtColor] = useState(PALETTE[1].hex);
+  const [selectedSize, setSelectedSize] = useState("M");
+  const [sizeChartOpen, setSizeChartOpen] = useState(false);
   const [textScale, setTextScale] = useState(1);
   const [textPosY, setTextPosY] = useState(0);
   const [imgScale, setImgScale] = useState(1);
   const [imgPosY, setImgPosY] = useState(0);
+  const [designTexFront, setDesignTexFront] = useState<THREE.CanvasTexture | null>(null);
+  const [designTexBack, setDesignTexBack] = useState<THREE.CanvasTexture | null>(null);
   const [autoRotate, setAutoRotate] = useState(true);
-  const [uploadedImg, setUploadedImg] = useState<HTMLImageElement | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [uploadedImg, setUploadedImg] = useState<HTMLImageElement | null>(null);
   const [imgShowFront, setImgShowFront] = useState(true);
   const [imgShowBack, setImgShowBack] = useState(true);
   const [textShowFront, setTextShowFront] = useState(true);
   const [textShowBack, setTextShowBack] = useState(true);
-  const [designTexFront, setDesignTexFront] = useState<THREE.CanvasTexture | null>(null);
-  const [designTexBack, setDesignTexBack] = useState<THREE.CanvasTexture | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const resetCameraRef = useRef<(() => void) | null>(null);
 
@@ -307,8 +310,8 @@ export default function Customize() {
               {/* Shirt Type */}
               <div>
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Apparel Type</Label>
-                <div className="flex gap-2 mt-3 mb-4">
-                  {(["regular", "oversized", "hoodie"] as ShirtType[]).map((type) => (
+                <div className="flex gap-2 mt-3">
+                  {(["regular", "oversized", "hoodie", "polo"] as ShirtType[]).map((type) => (
                     <button
                       key={type}
                       onClick={() => setShirtType(type)}
@@ -322,23 +325,161 @@ export default function Customize() {
                     </button>
                   ))}
                 </div>
+
+                {/* Size Selector */}
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Size</Label>
+                    <button
+                      onClick={() => setSizeChartOpen(true)}
+                      className="text-[11px] text-primary hover:underline font-medium"
+                    >
+                      Size Chart →
+                    </button>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    {["XS", "S", "M", "L", "XL", "XXL", "3XL"].map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => setSelectedSize(size)}
+                        className={`h-9 min-w-[2.5rem] px-3 rounded-lg border-2 text-xs font-bold transition-smooth ${
+                          selectedSize === size
+                            ? "border-primary bg-primary text-primary-foreground shadow-glow"
+                            : "border-border hover:border-primary/50 text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    Selected: <span className="font-semibold text-foreground">{selectedSize}</span>
+                    {shirtType === "oversized" && " · Oversized fit — size down if unsure"}
+                    {shirtType === "hoodie" && " · True to size"}
+                  </p>
+                </div>
               </div>
+
+              {/* Size Chart Modal */}
+              {sizeChartOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                  onClick={() => setSizeChartOpen(false)}>
+                  <div className="bg-card rounded-2xl border border-border shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-between p-5 border-b border-border">
+                      <div>
+                        <h3 className="font-bold text-base">Size Chart</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5 capitalize">{shirtType} fit</p>
+                      </div>
+                      <button onClick={() => setSizeChartOpen(false)}
+                        className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="p-5 space-y-5">
+                      {/* Measurement guide */}
+                      <div className="rounded-xl bg-accent/40 p-4 text-xs text-muted-foreground space-y-1.5">
+                        <p className="font-semibold text-foreground text-sm mb-2">How to measure</p>
+                        <p>📏 <strong>Chest:</strong> Measure around the fullest part of your chest, keeping the tape horizontal.</p>
+                        <p>📏 <strong>Length:</strong> Measure from the highest point of the shoulder to the hem.</p>
+                        <p>📏 <strong>Shoulder:</strong> Measure from shoulder seam to shoulder seam across the back.</p>
+                      </div>
+
+                      {/* Size table */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm border-collapse">
+                          <thead>
+                            <tr className="bg-muted/50">
+                              <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground rounded-tl-lg">Size</th>
+                              <th className="text-center px-3 py-2.5 text-xs font-semibold text-muted-foreground">Chest (in)</th>
+                              <th className="text-center px-3 py-2.5 text-xs font-semibold text-muted-foreground">Length (in)</th>
+                              <th className="text-center px-3 py-2.5 text-xs font-semibold text-muted-foreground rounded-tr-lg">Shoulder (in)</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(shirtType === "oversized"
+                              ? [
+                                  { size: "XS", chest: "40", length: "27", shoulder: "18" },
+                                  { size: "S",  chest: "42", length: "28", shoulder: "19" },
+                                  { size: "M",  chest: "44", length: "29", shoulder: "20" },
+                                  { size: "L",  chest: "46", length: "30", shoulder: "21" },
+                                  { size: "XL", chest: "48", length: "31", shoulder: "22" },
+                                  { size: "XXL",chest: "50", length: "32", shoulder: "23" },
+                                  { size: "3XL",chest: "52", length: "33", shoulder: "24" },
+                                ]
+                              : shirtType === "hoodie"
+                              ? [
+                                  { size: "XS", chest: "38", length: "26", shoulder: "17" },
+                                  { size: "S",  chest: "40", length: "27", shoulder: "18" },
+                                  { size: "M",  chest: "42", length: "28", shoulder: "19" },
+                                  { size: "L",  chest: "44", length: "29", shoulder: "20" },
+                                  { size: "XL", chest: "46", length: "30", shoulder: "21" },
+                                  { size: "XXL",chest: "48", length: "31", shoulder: "22" },
+                                  { size: "3XL",chest: "50", length: "32", shoulder: "23" },
+                                ]
+                              : [
+                                  { size: "XS", chest: "36", length: "26", shoulder: "16" },
+                                  { size: "S",  chest: "38", length: "27", shoulder: "17" },
+                                  { size: "M",  chest: "40", length: "28", shoulder: "18" },
+                                  { size: "L",  chest: "42", length: "29", shoulder: "19" },
+                                  { size: "XL", chest: "44", length: "30", shoulder: "20" },
+                                  { size: "XXL",chest: "46", length: "31", shoulder: "21" },
+                                  { size: "3XL",chest: "48", length: "32", shoulder: "22" },
+                                ]
+                            ).map((row) => (
+                              <tr key={row.size}
+                                className={`border-b border-border/50 transition-colors ${
+                                  selectedSize === row.size ? "bg-primary/10" : "hover:bg-muted/30"
+                                }`}>
+                                <td className="px-3 py-2.5">
+                                  <span className={`font-bold text-sm ${selectedSize === row.size ? "text-primary" : ""}`}>
+                                    {row.size}
+                                    {selectedSize === row.size && " ✓"}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-2.5 text-center text-muted-foreground">{row.chest}</td>
+                                <td className="px-3 py-2.5 text-center text-muted-foreground">{row.length}</td>
+                                <td className="px-3 py-2.5 text-center text-muted-foreground">{row.shoulder}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <p className="text-[11px] text-muted-foreground">
+                        All measurements are in inches. For a relaxed fit, size up. For a fitted look, choose your exact size.
+                      </p>
+
+                      {/* Quick select from chart */}
+                      <div>
+                        <p className="text-xs font-semibold mb-2">Quick select:</p>
+                        <div className="flex gap-2 flex-wrap">
+                          {["XS", "S", "M", "L", "XL", "XXL", "3XL"].map((size) => (
+                            <button key={size}
+                              onClick={() => { setSelectedSize(size); setSizeChartOpen(false); }}
+                              className={`h-9 min-w-[2.5rem] px-3 rounded-lg border-2 text-xs font-bold transition-smooth ${
+                                selectedSize === size
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : "border-border hover:border-primary/50"
+                              }`}>
+                              {size}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Shirt Color */}
               <div>
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Shirt Color</Label>
-                <div className="grid grid-cols-4 gap-2 mt-3 mb-4">
-                  {PALETTE.map((c) => (
-                    <button key={c.hex} onClick={() => setShirtColor(c.hex)} title={c.name}
-                      className={`h-10 rounded-xl border-2 transition-smooth ${shirtColor === c.hex ? "border-primary shadow-glow scale-110" : "border-border hover:scale-105"}`}
-                      style={{ backgroundColor: c.hex }} aria-label={c.name} />
-                  ))}
-                </div>
-                <div className="flex items-center gap-3">
-                  <input type="color" value={shirtColor} onChange={(e) => setShirtColor(e.target.value)}
-                    className="h-10 w-14 rounded-lg cursor-pointer border border-border" title="Custom Color" />
-                  <Input value={shirtColor} onChange={(e) => setShirtColor(e.target.value)} className="font-mono text-xs uppercase" />
-                </div>
+                <CanvaColorPicker
+                  label="Shirt Color"
+                  value={shirtColor}
+                  onChange={setShirtColor}
+                  swatches={PALETTE}
+                />
               </div>
 
               {/* Text */}
@@ -376,14 +517,23 @@ export default function Customize() {
 
               {/* Text Color */}
               <div>
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Text Color</Label>
-                <div className="mt-3 flex items-center gap-3 mb-4">
-                  <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)}
-                    className="h-10 w-14 rounded-lg cursor-pointer border border-border" />
-                  <Input value={textColor} onChange={(e) => setTextColor(e.target.value)} className="font-mono text-xs" />
-                </div>
+                <CanvaColorPicker
+                  label="Text Color"
+                  value={textColor}
+                  onChange={setTextColor}
+                  swatches={[
+                    { name: "White", hex: "#ffffff" },
+                    { name: "Black", hex: "#000000" },
+                    { name: "Royal", hex: "#7c3aed" },
+                    { name: "Rose", hex: "#f43f5e" },
+                    { name: "Sky", hex: "#38bdf8" },
+                    { name: "Sage", hex: "#4ade80" },
+                    { name: "Gold", hex: "#f59e0b" },
+                    { name: "Coral", hex: "#fb923c" },
+                  ]}
+                />
 
-                <div className="p-3 rounded-xl border border-border bg-accent/30 space-y-4">
+                <div className="mt-4 p-3 rounded-xl border border-border bg-accent/30 space-y-4">
                   <div>
                     <div className="flex justify-between mb-1.5">
                       <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Text Size</Label>
@@ -410,7 +560,7 @@ export default function Customize() {
                       name: "Custom T-Shirt Design",
                       slug: "custom-tshirt-" + Date.now(),
                       color: PALETTE.find(p => p.hex === shirtColor)?.name || "Custom Color",
-                      size: "M",
+                      size: selectedSize,
                       price: 1899,
                       qty: 1,
                       image: preview || "/assets/hero-tshirt.jpg"

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ShoppingBag, Plus, Check, Gift, ChevronRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
-// --- Data ---
+// --- Default fallback data ---
 const defaultTshirts = [
   { id: "t1", name: "Abstract Aurora", color: "Multicolor Print", price: 1499, image: "/tshirts/abstract.png" },
   { id: "t2", name: "Vintage Wash", color: "Faded Black", price: 1799, image: "/tshirts/vintage.png" },
@@ -19,7 +19,7 @@ const defaultTshirts = [
   { id: "t7", name: "Typography", color: "Minimal Text", price: 1399, image: "/tshirts/typography.png" },
 ];
 
-const accessories = [
+const defaultAccessories = [
   { id: "a1", name: "Lume Bifold Wallet", price: 499, image: "https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&q=80&w=400" },
   { id: "a2", name: "Embroidered Cap", price: 299, image: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&q=80&w=400" },
   { id: "a3", name: "Leather Keychain", price: 199, image: "https://images.unsplash.com/photo-1584984647265-4f40fbb1010e?auto=format&fit=crop&q=80&w=400" },
@@ -27,14 +27,14 @@ const accessories = [
   { id: "a5", name: "Aviator Glasses", price: 599, image: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&q=80&w=400" },
 ];
 
-const chocolates = [
+const defaultChocolates = [
   { id: "c1", name: "Belgian Dark Box", price: 299, image: "https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&q=80&w=400" },
   { id: "c2", name: "Assorted Pralines", price: 399, image: "https://images.unsplash.com/photo-1481391319762-47dff72954d9?auto=format&fit=crop&q=80&w=400" },
   { id: "c3", name: "Hazelnut Truffles", price: 449, image: "https://images.unsplash.com/photo-1614088058869-7c1b827e80f2?auto=format&fit=crop&q=80&w=400" },
   { id: "c4", name: "Caramel Bites", price: 349, image: "https://images.unsplash.com/photo-1542843137-87f1a59146bb?auto=format&fit=crop&q=80&w=400" },
 ];
 
-const packagings = [
+const defaultPackagings = [
   { id: "p1", name: "Kraft Paper Bag", price: 0, image: "https://images.unsplash.com/photo-1601598851547-4302969d0614?auto=format&fit=crop&q=80&w=400" },
   { id: "p2", name: "Premium Gift Box", price: 149, image: "https://images.unsplash.com/photo-1513885535751-8b9238bd345a?auto=format&fit=crop&q=80&w=400" },
   { id: "p3", name: "Luxury Velvet Box", price: 299, image: "https://images.unsplash.com/photo-1550983556-9a286c07abaf?auto=format&fit=crop&q=80&w=400" },
@@ -45,12 +45,34 @@ const STEPS = ["T-Shirt", "Accessories", "Chocolates", "Packaging", "Message & P
 const GiftBoxBuilder = () => {
   const router = useRouter();
   const [tshirts, setTshirts] = useState(defaultTshirts);
+  const [accessories, setAccessories] = useState(defaultAccessories);
+  const [chocolates, setChocolates] = useState(defaultChocolates);
+  const [packagings, setPackagings] = useState(defaultPackagings);
   const [step, setStep] = useState(0);
   const [selectedTshirt, setSelectedTshirt] = useState<string | null>(null);
   const [selectedAcc, setSelectedAcc] = useState<string[]>([]);
   const [selectedChoc, setSelectedChoc] = useState<string | null>(null);
   const [selectedPack, setSelectedPack] = useState("p1");
   const [message, setMessage] = useState("");
+
+  // Load builder items from settings API
+  useEffect(() => {
+    fetch("/api/site/settings")
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && json.data?.giftBuilder) {
+          const gb = json.data.giftBuilder;
+          if (gb.tshirts?.length) setTshirts(gb.tshirts);
+          if (gb.accessories?.length) setAccessories(gb.accessories);
+          if (gb.chocolates?.length) setChocolates(gb.chocolates);
+          if (gb.packagings?.length) {
+            setPackagings(gb.packagings);
+            setSelectedPack(gb.packagings[0]?.id ?? "p1");
+          }
+        }
+      })
+      .catch(() => {/* use defaults */});
+  }, []);
 
   // Check for custom t-shirt coming from /customize
   useEffect(() => {
@@ -59,11 +81,9 @@ const GiftBoxBuilder = () => {
       if (saved) {
         const parsed = JSON.parse(saved);
         setTshirts((prev) => {
-          // Prevent duplicate insertion if navigating back and forth
           if (prev.some(t => t.id === parsed.id)) return prev;
           return [parsed, ...prev];
         });
-        // Auto-select the custom t-shirt and clear it from storage so it doesn't persist forever
         setSelectedTshirt(parsed.id);
         localStorage.removeItem("lemmewear_custom_gift_tshirt");
       }

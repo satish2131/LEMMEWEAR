@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { SHIRT_MODELS, MODEL_CONFIG, ShirtType } from '@/lib/constants/modelConfig';
@@ -55,6 +55,7 @@ export default function ShirtModel({
   const modelUrl = SHIRT_MODELS[shirtType];
   const { scene } = useGLTF(modelUrl) as any;
   const config = MODEL_CONFIG[shirtType];
+  const groupRef = useRef<THREE.Group>(null);
 
   useEffect(() => {
     if (!scene) return;
@@ -70,12 +71,26 @@ export default function ShirtModel({
         }
       }
     });
-  }, [scene, color]);
+
+    // Auto-center polo (and any model with autoCenter flag)
+    if (shirtType === 'polo' && groupRef.current) {
+      const box = new THREE.Box3().setFromObject(groupRef.current);
+      const center = box.getCenter(new THREE.Vector3());
+      // Shift the group so its bounding box center sits at world origin
+      groupRef.current.position.y -= center.y;
+    }
+  }, [scene, color, shirtType]);
 
   if (!scene) return null;
 
   return (
-    <group position={config.position} rotation={config.rotation} scale={config.scale} dispose={null}>
+    <group
+      ref={groupRef}
+      position={config.position}
+      rotation={config.rotation}
+      scale={config.scale}
+      dispose={null}
+    >
       <primitive object={scene} />
 
       {designTexFront && showFront && (
@@ -100,3 +115,9 @@ export default function ShirtModel({
     </group>
   );
 }
+
+// Preload all models so switching is instant
+useGLTF.preload('/models/shirt_baked.glb');
+useGLTF.preload('/models/oversized_t-shirt.glb');
+useGLTF.preload('/models/hoodie.glb');
+useGLTF.preload('/models/polo_tshirt.glb');
