@@ -34,7 +34,7 @@ const APPAREL_MODELS: { type: ShirtType; label: string; desc: string; emoji: str
 // ─── Sidebar tabs ─────────────────────────────────────────────────────────────
 type SideTab = "models" | "edit" | "colors" | "text";
 
-const SIDE_TABS: { id: SideTab; icon: React.ElementType; label: string }[] = [
+const SIDE_TABS: { id: SideTab; icon: React.ComponentType<{ className?: string }>; label: string }[] = [
   { id: "models", icon: Shirt,     label: "Models"  },
   { id: "edit",   icon: ImageIcon, label: "Edit"    },
   { id: "colors", icon: Palette,   label: "Colors"  },
@@ -407,8 +407,8 @@ export default function Customize() {
           userEmail: user.email,
           name: text.trim() || "My Custom Design",
           preview: preview || "/assets/hero-tshirt.jpg",
-          config: { text, font, textColor, shirtColor, textScale, textPosY, imgScale, imgPosY,
-                    imgShowFront, imgShowBack, textShowFront, textShowBack },
+          config: { text, backText, font, textColor, shirtColor, textScale,
+                    textPos, textPosBack, imgScale, imgPos, imgPosBack },
         }),
       });
       const data = await res.json();
