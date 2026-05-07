@@ -19,24 +19,26 @@ import {
   TrendingUp,
   Gift,
   Phone,
+  UserCog,
 } from "lucide-react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { title: "Orders", href: "/admin/orders", icon: ShoppingCart },
-  { title: "Products", href: "/admin/products", icon: Package },
-  { title: "Customers", href: "/admin/customers", icon: Users },
-  { title: "Custom Designs", href: "/admin/designs", icon: Palette },
-  { title: "Reviews", href: "/admin/reviews", icon: Star },
-  { title: "Discount Codes", href: "/admin/coupons", icon: Tag },
-  { title: "Support", href: "/admin/support", icon: HeadphonesIcon },
-  { title: "Contact & Social", href: "/admin/contact-settings", icon: Phone },
-  { title: "Trending Section", href: "/admin/trending-settings", icon: TrendingUp },
-  { title: "Gift Packs", href: "/admin/gift-packs-settings", icon: Gift },
-  { title: "Gift Box Builder", href: "/admin/gift-builder", icon: Gift },
+  { title: "Dashboard",        href: "/admin",                    icon: LayoutDashboard },
+  { title: "Orders",           href: "/admin/orders",             icon: ShoppingCart },
+  { title: "Products",         href: "/admin/products",           icon: Package },
+  { title: "Customers",        href: "/admin/customers",          icon: Users },
+  { title: "Custom Designs",   href: "/admin/designs",            icon: Palette },
+  { title: "Reviews",          href: "/admin/reviews",            icon: Star },
+  { title: "Discount Codes",   href: "/admin/coupons",            icon: Tag },
+  { title: "Support",          href: "/admin/support",            icon: HeadphonesIcon },
+  { title: "Contact & Social", href: "/admin/contact-settings",   icon: Phone },
+  { title: "Trending Section", href: "/admin/trending-settings",  icon: TrendingUp },
+  { title: "Gift Packs",       href: "/admin/gift-packs-settings",icon: Gift },
+  { title: "Gift Box Builder", href: "/admin/gift-builder",       icon: Gift },
+  { title: "Admin Users",      href: "/admin/admin-users",        icon: UserCog, superadminOnly: true },
 ];
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
@@ -104,29 +106,38 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-          {navItems.map((item) => {
-            const active =
-              item.href === "/admin"
-                ? pathname === "/admin"
-                : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                )}
-              >
-                <item.icon className="h-4 w-4 shrink-0" />
-                {item.title}
-                {active && <ChevronRight className="ml-auto h-3.5 w-3.5" />}
-              </Link>
-            );
-          })}
+          {navItems
+            .filter((item) => !item.superadminOnly || admin.role === "superadmin")
+            .map((item, idx, arr) => {
+              // Add a divider before the Admin Users item
+              const prevItem = arr[idx - 1];
+              const showDivider = item.superadminOnly && prevItem && !prevItem.superadminOnly;
+              const active =
+                item.href === "/admin"
+                  ? pathname === "/admin"
+                  : pathname.startsWith(item.href);
+              return (
+                <div key={item.href}>
+                  {showDivider && (
+                    <div className="my-2 border-t border-border/60" />
+                  )}
+                  <Link
+                    href={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                      active
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    {item.title}
+                    {active && <ChevronRight className="ml-auto h-3.5 w-3.5" />}
+                  </Link>
+                </div>
+              );
+            })}
         </nav>
 
         {/* Footer */}

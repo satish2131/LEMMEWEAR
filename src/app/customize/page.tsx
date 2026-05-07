@@ -18,6 +18,7 @@ import { useAuth } from "@/context/AuthContext";
 import { BookmarkPlus } from "lucide-react";
 import { buildDesignTextures } from "@/lib/buildDesignTextures";
 import CanvaColorPicker from "@/components/ui/CanvaColorPicker";
+import { readActiveCart, writeActiveCart } from "@/lib/cartKey";
 
 /* Dynamic import — disables SSR for the heavy Three.js Canvas */
 const Viewer = dynamic(() => import("@/components/Customizer/Viewer"), { ssr: false });
@@ -566,10 +567,9 @@ export default function Customize() {
                       image: preview || "/assets/hero-tshirt.jpg"
                     };
                     try {
-                      const existing = JSON.parse(localStorage.getItem('lemmewear_cart') || '[]');
-                      const cartArray = Array.isArray(existing) ? existing : [];
+                      const cartArray = readActiveCart();
                       cartArray.push(newItem);
-                      localStorage.setItem('lemmewear_cart', JSON.stringify(cartArray));
+                      writeActiveCart(cartArray);
                     } catch (e) {
                       console.error("Failed to add to cart", e);
                     }

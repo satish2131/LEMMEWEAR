@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { DollarSign, ShoppingCart, Palette, Users, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAdminAuth } from "@/context/AdminAuthContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -77,6 +78,7 @@ const statusColor: Record<string, string> = {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const { admin } = useAdminAuth();
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [revenueByDay, setRevenueByDay] = useState<RevenueDay[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryData[]>([]);
@@ -197,7 +199,7 @@ export default function DashboardPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-sm text-muted-foreground">
-          Welcome back, Admin Kumar
+          Welcome back, {admin?.name || "Admin"}
           {isDemo && (
             <span className="ml-2 text-xs text-yellow-600 bg-yellow-500/10 px-2 py-0.5 rounded-full">
               Demo data — add real orders to see live stats

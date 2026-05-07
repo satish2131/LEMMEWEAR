@@ -5,12 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';;
+import { useRouter } from 'next/navigation';
 import { ShoppingBag, Trash2, Plus, Minus, Tag, Gift, Package } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-const auroraImg = "/assets/tshirt-aurora.jpg";
-const horizonImg = "/assets/tshirt-horizon.jpg";
+import { readActiveCart, writeActiveCart, activeCheckoutKey } from "@/lib/cartKey";
 
 const initial: any[] = [];
 
@@ -32,18 +31,13 @@ const Cart = () => {
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('lemmewear_cart');
-      if (saved) {
-        const parsedItems = JSON.parse(saved);
-        if (Array.isArray(parsedItems) && parsedItems.length > 0) {
-          setItems((prev) => {
-            // Merge local storage items, avoiding exact duplicates if needed, 
-            // but since gift boxes have unique timestamps as IDs, just append them
-            const existingIds = new Set(prev.map(i => i.id));
-            const newItems = parsedItems.filter(i => !existingIds.has(i.id));
-            return [...prev, ...newItems];
-          });
-        }
+      const parsedItems = readActiveCart();
+      if (Array.isArray(parsedItems) && parsedItems.length > 0) {
+        setItems((prev) => {
+          const existingIds = new Set(prev.map(i => i.id));
+          const newItems = parsedItems.filter(i => !existingIds.has(i.id));
+          return [...prev, ...newItems];
+        });
       }
     } catch(e) {
       console.error("Failed to parse cart from local storage", e);
@@ -51,11 +45,10 @@ const Cart = () => {
   }, []);
 
 
-  // Sync to local storage whenever items change
+  // Sync to localStorage whenever items change
   useEffect(() => {
     if (items !== initial) {
-      localStorage.setItem('lemmewear_cart', JSON.stringify(items));
-      window.dispatchEvent(new Event('cart_updated'));
+      writeActiveCart(items);
     }
   }, [items]);
 
@@ -84,9 +77,7 @@ const Cart = () => {
 
   const syncToLocalStorage = (currentItems: any[]) => {
     try {
-      // Only sync items that were added dynamically (e.g. have timestamp IDs > 1000)
-      const dynamicItems = currentItems.filter(i => typeof i.id === 'number' && i.id > 1000);
-      localStorage.setItem('lemmewear_cart', JSON.stringify(dynamicItems));
+      writeActiveCart(currentItems);
     } catch(e) {}
   };
 
@@ -257,7 +248,7 @@ const Cart = () => {
               </div>
 
               <Button variant="hero" size="lg" className="w-full" onClick={() => {
-                localStorage.setItem('lemmewear_checkout', JSON.stringify({ items, total, subtotal }));
+                localStorage.setItem(activeCheckoutKey(), JSON.stringify({ items, total, subtotal }));
                 router.push('/checkout');
               }}>
                 Proceed to Checkout

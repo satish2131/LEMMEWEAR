@@ -7,6 +7,7 @@ export interface IReview extends Document {
   rating: number;
   title: string;
   comment: string;
+  images: string[]; // base64 or URLs
   verified: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -20,6 +21,7 @@ const ReviewSchema = new Schema<IReview>(
     rating: { type: Number, required: true, min: 1, max: 5 },
     title: { type: String, required: true },
     comment: { type: String, required: true },
+    images: { type: [String], default: [] },
     verified: { type: Boolean, default: false },
   },
   {

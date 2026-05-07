@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";
 import { SearchOverlay } from "./SearchOverlay";
 import { useAuth } from "@/context/AuthContext";
+import { activeCartKey } from "@/lib/cartKey";
 
 const shopMegaMenu = {
   categories: [
@@ -84,7 +85,7 @@ export const Navbar = () => {
     
     const updateCartCount = () => {
       try {
-        const cart = JSON.parse(localStorage.getItem("lemmewear_cart") || "[]");
+        const cart = JSON.parse(localStorage.getItem(activeCartKey()) || "[]");
         setCartCount(cart.reduce((sum: number, item: any) => sum + (item.qty || 1), 0));
       } catch (e) {
         setCartCount(0);

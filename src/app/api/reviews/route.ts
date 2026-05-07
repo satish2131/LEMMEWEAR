@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     await dbConnect();
 
     const body = await request.json();
-    const { productSlug, userName, userEmail, rating, title, comment } = body;
+    const { productSlug, userName, userEmail, rating, title, comment, images } = body;
 
     if (!productSlug || !userName || !userEmail || !rating || !title || !comment) {
       return Response.json(
@@ -84,6 +84,16 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate images — max 4, each base64 string max ~2MB
+    const sanitizedImages: string[] = [];
+    if (Array.isArray(images)) {
+      for (const img of images.slice(0, 4)) {
+        if (typeof img === "string" && img.startsWith("data:image/")) {
+          sanitizedImages.push(img);
+        }
+      }
+    }
+
     const review = await Review.create({
       productSlug,
       userName,
@@ -91,6 +101,7 @@ export async function POST(request: Request) {
       rating,
       title,
       comment,
+      images: sanitizedImages,
     });
 
     // Update product review count and average rating

@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { Heart, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { toast } from "sonner";
+import { readActiveCart, writeActiveCart } from "@/lib/cartKey";
 
 interface TrendingProduct {
   slug: string;
@@ -118,7 +120,24 @@ export const Trending = () => {
                     variant="hero"
                     size="sm"
                     className="w-full"
-                    onClick={(e) => e.preventDefault()}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      try {
+                        const cart = readActiveCart();
+                        cart.push({
+                          id: Date.now() + Math.random(),
+                          name: p.name,
+                          slug: p.slug,
+                          color: p.subtitle || "Standard",
+                          size: "M",
+                          price: p.price,
+                          qty: 1,
+                          image: p.image,
+                        });
+                        writeActiveCart(cart);
+                      } catch (_) {}
+                      toast.success(`${p.name} added to cart`);
+                    }}
                   >
                     Quick Add
                   </Button>

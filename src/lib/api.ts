@@ -165,6 +165,7 @@ export interface CreateReviewPayload {
   rating: number;
   title: string;
   comment: string;
+  images?: string[];
 }
 
 export async function fetchReviews(slug: string, page = 1, limit = 10) {

@@ -7,6 +7,7 @@ import { GiftPacks } from "@/components/site/GiftPacks";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, Plus, Check, Gift, ChevronRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { readActiveCart, writeActiveCart } from "@/lib/cartKey";
 
 // --- Default fallback data ---
 const defaultTshirts = [
@@ -129,11 +130,11 @@ const GiftBoxBuilder = () => {
         };
         
         try {
-          const existingCart = JSON.parse(localStorage.getItem('lemmewear_cart') || '[]');
+          const existingCart = readActiveCart();
           existingCart.push(giftBoxItem);
-          localStorage.setItem('lemmewear_cart', JSON.stringify(existingCart));
+          writeActiveCart(existingCart);
         } catch(e) {
-          localStorage.setItem('lemmewear_cart', JSON.stringify([giftBoxItem]));
+          writeActiveCart([giftBoxItem]);
         }
 
         toast.success("Gift box added to cart! 🎁");

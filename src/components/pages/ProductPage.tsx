@@ -5,13 +5,15 @@ import { useRouter } from 'next/navigation';
 import { Navbar } from "@/components/site/Navbar";
 import { Footer } from "@/components/site/Footer";
 import { ProductCard } from "@/components/site/ProductCard";
+import ProductReviews from "@/components/site/ProductReviews";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Heart, Minus, Plus, Shield, Star, Truck, RotateCcw, ChevronRight, Ruler, Loader2 } from "lucide-react";
 import { Product, getProductBySlug, getRelated } from "@/data/products";
 import { toast } from "sonner";
-import { fetchProductBySlug, addToWishlist } from "@/lib/api";
+import { fetchProductBySlug, addToWishlist, removeFromWishlist, fetchWishlist } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { readActiveCart, writeActiveCart } from "@/lib/cartKey";
 
 const ProductPage = ({ slug }: { slug: string }) => {
   const router = useRouter();
@@ -25,6 +27,19 @@ const ProductPage = ({ slug }: { slug: string }) => {
   const [color, setColor] = useState(product?.colors[0]?.name ?? "");
   const [size, setSize] = useState<string | undefined>(product?.sizes?.[2] ?? product?.sizes?.[0]);
   const [qty, setQty] = useState(1);
+  const [wishlisted, setWishlisted] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
+
+  // Load wishlist state for this product
+  useEffect(() => {
+    if (!user?.email || !slug) return;
+    fetchWishlist(user.email)
+      .then((res) => {
+        const items = (res.data || []) as { slug: string }[];
+        setWishlisted(items.some((item) => item.slug === slug));
+      })
+      .catch(() => {});
+  }, [user?.email, slug]);
 
   // Fetch from API (enhances with DB data)
   useEffect(() => {
@@ -93,15 +108,25 @@ const ProductPage = ({ slug }: { slug: string }) => {
 
   const handleWishlist = async () => {
     if (!user?.email) {
-      toast.error("Please login to add items to wishlist");
+      toast.error("Please sign in to save items to your wishlist");
       router.push("/login");
       return;
     }
+    setWishlistLoading(true);
     try {
-      await addToWishlist(user.email, product?.slug || slug);
-      toast.success(`${product?.name} added to wishlist!`);
-    } catch (e: any) {
-      toast.error(e.message || "Failed to add to wishlist");
+      if (wishlisted) {
+        await removeFromWishlist(user.email, product?.slug || slug);
+        setWishlisted(false);
+        toast.success(`${product?.name} removed from wishlist`);
+      } else {
+        await addToWishlist(user.email, product?.slug || slug);
+        setWishlisted(true);
+        toast.success(`${product?.name} added to wishlist!`);
+      }
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to update wishlist");
+    } finally {
+      setWishlistLoading(false);
     }
   };
 
@@ -111,7 +136,7 @@ const ProductPage = ({ slug }: { slug: string }) => {
       return;
     }
     try {
-      const cart = JSON.parse(localStorage.getItem('lemmewear_cart') || '[]');
+      const cart = readActiveCart();
       cart.push({
         id: Date.now() + Math.random(),
         name: product.name,
@@ -122,8 +147,7 @@ const ProductPage = ({ slug }: { slug: string }) => {
         qty: qty,
         image: product.image || product.gallery?.[0]
       });
-      localStorage.setItem('lemmewear_cart', JSON.stringify(cart));
-      window.dispatchEvent(new Event('cart_updated'));
+      writeActiveCart(cart);
     } catch(e) {}
     toast.success(`${product.name} added to cart`, { description: `${color} • ${size ?? "One Size"} • Qty ${qty}` });
   };
@@ -312,11 +336,12 @@ const ProductPage = ({ slug }: { slug: string }) => {
               <Button
                 variant="outline"
                 size="icon"
-                className="h-12 w-12"
-                aria-label="Wishlist"
+                className={`h-12 w-12 transition-colors ${wishlisted ? "border-red-400 text-red-500 hover:bg-red-50" : ""}`}
+                aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
                 onClick={handleWishlist}
+                disabled={wishlistLoading}
               >
-                <Heart className="h-5 w-5" />
+                <Heart className={`h-5 w-5 transition-colors ${wishlisted ? "fill-red-500 text-red-500" : ""}`} />
               </Button>
             </div>
 
@@ -377,6 +402,8 @@ const ProductPage = ({ slug }: { slug: string }) => {
             </div>
           </section>
         )}
+
+        <ProductReviews slug={slug} />
       </main>
       <Footer />
     </div>
