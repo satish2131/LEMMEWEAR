@@ -179,15 +179,59 @@ function shippingBlockHtml(order: IOrder) {
 
 // ─── Payment block (HTML) ─────────────────────────────────────────────────────
 function paymentBlockHtml(order: IOrder) {
+  const isCod = order.payment.method === "cod";
+  const isPaid = order.payment.status === "paid";
+  const statusColor = isPaid ? "#16a34a" : isCod ? "#d97706" : "#6b7280";
+  const statusBg    = isPaid ? "#f0fdf4" : isCod ? "#fffbeb" : "#f9f9f9";
+  const statusBorder = isPaid ? "#bbf7d0" : isCod ? "#fde68a" : "#e4e4e7";
+
+  const rzpPaymentId = (order.payment as any).razorpayPaymentId;
+  const rzpOrderId   = (order.payment as any).razorpayOrderId;
+
   return `
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f9f9f9;border-radius:6px;margin-top:12px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+    style="background:${statusBg};border:1px solid ${statusBorder};border-radius:6px;margin-top:12px;">
     <tr>
       <td style="padding:16px 20px;font-family:Arial,sans-serif;">
-        <p style="margin:0 0 8px;font-weight:700;font-size:12px;color:#111111;text-transform:uppercase;letter-spacing:0.5px;">Payment</p>
-        <p style="margin:0;color:#374151;font-size:14px;line-height:1.7;">
-          Method: <strong>${paymentLabel[order.payment.method] ?? order.payment.method}</strong><br />
-          Status: <strong style="text-transform:capitalize;">${order.payment.status}</strong>
-        </p>
+        <p style="margin:0 0 10px;font-weight:700;font-size:12px;color:#111111;text-transform:uppercase;letter-spacing:0.5px;">Payment Details</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="color:#555555;font-size:13px;padding:3px 0;width:40%;">Method</td>
+            <td style="color:#111111;font-size:13px;font-weight:700;text-align:right;">
+              ${paymentLabel[order.payment.method] ?? order.payment.method}
+            </td>
+          </tr>
+          <tr>
+            <td style="color:#555555;font-size:13px;padding:3px 0;">Status</td>
+            <td style="text-align:right;">
+              <span style="background:${statusColor};color:#fff;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:capitalize;">
+                ${order.payment.status}
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td style="color:#555555;font-size:13px;padding:3px 0;">Amount Paid</td>
+            <td style="color:#111111;font-size:13px;font-weight:700;text-align:right;">${fmt(order.total)}</td>
+          </tr>
+          ${rzpPaymentId ? `
+          <tr>
+            <td style="color:#555555;font-size:13px;padding:3px 0;">Transaction ID</td>
+            <td style="color:#111111;font-size:12px;font-weight:600;text-align:right;font-family:monospace;">${rzpPaymentId}</td>
+          </tr>` : ""}
+          ${rzpOrderId ? `
+          <tr>
+            <td style="color:#555555;font-size:13px;padding:3px 0;">Razorpay Order</td>
+            <td style="color:#111111;font-size:12px;font-weight:600;text-align:right;font-family:monospace;">${rzpOrderId}</td>
+          </tr>` : ""}
+          ${isCod ? `
+          <tr>
+            <td colspan="2" style="padding-top:8px;">
+              <p style="margin:0;font-size:12px;color:#92400e;background:#fef3c7;border:1px solid #fde68a;border-radius:4px;padding:8px 12px;">
+                Pay cash when your order is delivered. Keep exact change ready.
+              </p>
+            </td>
+          </tr>` : ""}
+        </table>
       </td>
     </tr>
   </table>`;

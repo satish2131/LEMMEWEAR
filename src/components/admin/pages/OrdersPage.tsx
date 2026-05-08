@@ -26,7 +26,12 @@ interface Order {
   items: OrderItem[];
   total: number;
   status: string;
-  payment: { method: string; status: string };
+  payment: {
+    method: string;
+    status: string;
+    razorpayOrderId?: string;
+    razorpayPaymentId?: string;
+  };
   packagingType: string;
   createdAt: string;
 }
@@ -154,6 +159,7 @@ export default function OrdersPage() {
                     <th className="pb-3 font-medium">Customer</th>
                     <th className="pb-3 font-medium hidden md:table-cell">Date</th>
                     <th className="pb-3 font-medium hidden sm:table-cell">Payment</th>
+                    <th className="pb-3 font-medium hidden lg:table-cell">Transaction ID</th>
                     <th className="pb-3 font-medium">Status</th>
                     <th className="pb-3 font-medium text-right">Total</th>
                     <th className="pb-3 font-medium text-right">Action</th>
@@ -162,7 +168,7 @@ export default function OrdersPage() {
                 <tbody>
                   {orders.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-16 text-center">
+                      <td colSpan={8} className="py-16 text-center">
                         <Search className="mx-auto h-10 w-10 text-muted-foreground/30" />
                         <p className="mt-3 text-sm text-muted-foreground">No orders found</p>
                       </td>
@@ -183,6 +189,15 @@ export default function OrdersPage() {
                           <Badge variant="secondary" className="text-[11px]">
                             {o.payment.method.toUpperCase()}
                           </Badge>
+                        </td>
+                        <td className="py-3 hidden lg:table-cell">
+                          {o.payment.razorpayPaymentId ? (
+                            <span className="font-mono text-[11px] text-muted-foreground select-all">
+                              {o.payment.razorpayPaymentId}
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-muted-foreground/40">—</span>
+                          )}
                         </td>
                         <td className="py-3">
                           <Badge
@@ -302,10 +317,48 @@ export default function OrdersPage() {
                   <span className="text-muted-foreground">Packaging</span>
                   <span className="font-medium capitalize">{selected.packagingType}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Payment</span>
-                  <span className="font-medium uppercase">{selected.payment.method}</span>
+
+                {/* ── Payment details ── */}
+                <div className="rounded-lg border border-border bg-secondary/30 p-3 space-y-2 text-sm">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Payment</p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Method</span>
+                    <Badge variant="secondary" className="text-[11px] uppercase">
+                      {selected.payment.method}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Status</span>
+                    <span className={`text-xs font-bold capitalize ${
+                      selected.payment.status === "paid"    ? "text-green-600"  :
+                      selected.payment.status === "pending" ? "text-yellow-600" : "text-red-600"
+                    }`}>
+                      {selected.payment.status}
+                    </span>
+                  </div>
+                  {selected.payment.razorpayPaymentId && (
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="text-muted-foreground shrink-0">Transaction ID</span>
+                      <span className="font-mono text-[11px] text-foreground break-all text-right select-all">
+                        {selected.payment.razorpayPaymentId}
+                      </span>
+                    </div>
+                  )}
+                  {selected.payment.razorpayOrderId && (
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="text-muted-foreground shrink-0">Razorpay Order</span>
+                      <span className="font-mono text-[11px] text-muted-foreground break-all text-right select-all">
+                        {selected.payment.razorpayOrderId}
+                      </span>
+                    </div>
+                  )}
+                  {selected.payment.method === "cod" && (
+                    <p className="text-[11px] text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-1 mt-1">
+                      Cash on Delivery — collect payment at doorstep
+                    </p>
+                  )}
                 </div>
+
                 <div className="flex justify-between text-base font-bold">
                   <span>Total</span>
                   <span>₹{selected.total.toLocaleString()}</span>

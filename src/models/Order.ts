@@ -34,6 +34,8 @@ export interface IOrder extends Document {
   payment: {
     method: "upi" | "card" | "netbanking" | "cod";
     status: "pending" | "paid" | "failed" | "refunded";
+    razorpayOrderId?: string;
+    razorpayPaymentId?: string;
   };
   status: "confirmed" | "processing" | "shipped" | "delivered" | "cancelled";
   trackingId?: string;
@@ -88,6 +90,8 @@ const OrderSchema = new Schema<IOrder>(
         default: "pending",
         enum: ["pending", "paid", "failed", "refunded"],
       },
+      razorpayOrderId:   { type: String },
+      razorpayPaymentId: { type: String },
     },
     status: {
       type: String,

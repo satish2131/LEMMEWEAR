@@ -33,13 +33,31 @@ function uid() {
 function renderContent(text: string) {
   const lines = text.split("\n");
   return lines.map((line, i) => {
-    // Bold **text**
-    const parts = line.split(/(\*\*[^*]+\*\*)/g).map((part, j) => {
-      if (part.startsWith("**") && part.endsWith("**")) {
-        return <strong key={j}>{part.slice(2, -2)}</strong>;
+    // Parse inline: **bold** and [text](url)
+    const parts: React.ReactNode[] = [];
+    const regex = /(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g;
+    let last = 0;
+    let match;
+    while ((match = regex.exec(line)) !== null) {
+      if (match.index > last) parts.push(line.slice(last, match.index));
+      const token = match[0];
+      if (token.startsWith("**")) {
+        parts.push(<strong key={match.index}>{token.slice(2, -2)}</strong>);
+      } else {
+        // [text](url)
+        const linkMatch = token.match(/\[([^\]]+)\]\(([^)]+)\)/);
+        if (linkMatch) {
+          parts.push(
+            <a key={match.index} href={linkMatch[2]}
+              className="text-primary font-semibold underline underline-offset-2 hover:opacity-80">
+              {linkMatch[1]}
+            </a>
+          );
+        }
       }
-      return part;
-    });
+      last = match.index + token.length;
+    }
+    if (last < line.length) parts.push(line.slice(last));
     return (
       <span key={i}>
         {parts}
@@ -74,7 +92,9 @@ export default function ChatWidget() {
         setMessages([{
           id: uid(),
           role: "bot",
-          content: `Hey there! 👋 Welcome to **LemmeWear** support!\n\nI can help you with orders, shipping, returns, sizing, custom designs, and more.\n\nWhat can I help you with today?`,
+          content: user
+            ? `Hey ${user.name.split(" ")[0]}! 👋 Welcome to **LemmeWear** support!\n\nI can help you with orders, shipping, returns, sizing, custom designs, and more.\n\nWhat can I help you with today?`
+            : `Hey there! 👋 Welcome to **LemmeWear** support!\n\nPlease **sign in** to get personalised help with your orders and account.\n\n[Sign in →](/login)\n\nOr ask me a general question about shipping, sizing, or our products!`,
           time: formatTime(),
         }]);
       }
@@ -131,6 +151,20 @@ export default function ChatWidget() {
   const sendMessage = async () => {
     const text = input.trim();
     if (!text || loading) return;
+
+    // ── Require login before any message ──────────────────────────────────
+    if (!user) {
+      const userMsg: Message = { id: uid(), role: "user", content: text, time: formatTime() };
+      const botMsg: Message = {
+        id: uid(),
+        role: "bot",
+        content: `Please **sign in** to use LemmeWear support chat. 🔐\n\nLogging in lets us:\n• Look up your orders instantly\n• Create support tickets linked to your account\n• Give you personalised help\n\n[Sign in to continue →](/login)`,
+        time: formatTime(),
+      };
+      setMessages((prev) => [...prev, userMsg, botMsg]);
+      setInput("");
+      return;
+    }
 
     const userMsg: Message = { id: uid(), role: "user", content: text, time: formatTime() };
     setMessages((prev) => [...prev, userMsg]);
@@ -195,13 +229,9 @@ export default function ChatWidget() {
   };
 
   // Quick reply chips
-  const quickReplies = [
-    "My orders",
-    "Track my order",
-    "Shipping info",
-    "Return policy",
-    "Talk to agent",
-  ];
+  const quickReplies = user
+    ? ["My orders", "Track my order", "Shipping info", "Return policy", "Talk to agent"]
+    : ["Shipping info", "Return policy", "Size guide", "Sign in to continue"];
 
   const showQuickReplies = messages.length <= 2;
 
@@ -329,7 +359,14 @@ export default function ChatWidget() {
                   {quickReplies.map((q) => (
                     <button
                       key={q}
-                      onClick={() => { setInput(q); setTimeout(() => sendMessage(), 0); }}
+                      onClick={() => {
+                        if (q === "Sign in to continue") {
+                          window.location.href = "/login";
+                          return;
+                        }
+                        setInput(q);
+                        setTimeout(() => sendMessage(), 0);
+                      }}
                       className="text-xs px-3 py-1.5 rounded-full border border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 transition-colors font-medium"
                     >
                       {q}
@@ -354,7 +391,7 @@ export default function ChatWidget() {
             {/* Input area */}
             <div className="border-t border-border px-3 py-3 shrink-0">
               {/* User info strip */}
-              {user && (
+              {user ? (
                 <div className="flex items-center gap-1.5 mb-2 px-1">
                   <div className="h-4 w-4 rounded-full bg-primary/20 flex items-center justify-center">
                     <User className="h-2.5 w-2.5 text-primary" />
@@ -363,6 +400,14 @@ export default function ChatWidget() {
                     Chatting as <span className="font-semibold text-foreground">{user.name}</span>
                   </span>
                 </div>
+              ) : (
+                <a
+                  href="/login"
+                  className="flex items-center gap-2 mb-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors"
+                >
+                  <User className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span className="text-[11px] text-primary font-semibold">Sign in for personalised support →</span>
+                </a>
               )}
 
               <div className="flex items-end gap-2">

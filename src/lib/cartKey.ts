@@ -36,7 +36,8 @@ export function writeCart(items: any[], userId?: string | null): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(cartKey(userId), JSON.stringify(items));
-    window.dispatchEvent(new Event("cart_updated"));
+    // Defer the event so it never fires synchronously during a React render
+    setTimeout(() => window.dispatchEvent(new Event("cart_updated")), 0);
   } catch {
     // ignore quota errors
   }

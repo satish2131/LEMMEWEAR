@@ -644,24 +644,24 @@ export default function Customize() {
       <Navbar />
       <div className="pt-16" />
 
-      <main className="flex-1 flex flex-col">
-        {/* Top bar */}
-        <div className="border-b border-border bg-card px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={() => router.back()} className="h-8 w-8 rounded-lg border border-border flex items-center justify-center hover:bg-accent transition-smooth">
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <div>
-              <h1 className="text-sm font-bold">Design Studio</h1>
-              <p className="text-xs text-muted-foreground capitalize">{APPAREL_MODELS.find(m => m.type === shirtType)?.label} · Size {selectedSize}</p>
+      <main className="flex-1 flex flex-col overflow-hidden" style={{ height: "calc(100vh - 64px)" }}>
+
+        {/* ── Top bar ── */}
+        <div className="border-b border-border bg-card px-3 py-2.5 flex items-center justify-between shrink-0 gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="min-w-0">
+              <h1 className="text-sm font-bold leading-tight">Design Studio</h1>
+              <p className="text-[11px] text-muted-foreground capitalize truncate">
+                {APPAREL_MODELS.find(m => m.type === shirtType)?.label} · Size {selectedSize}
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5 hidden sm:flex" onClick={handleSaveDesign} disabled={isSaving}>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Button variant="outline" size="sm" className="gap-1.5 hidden sm:flex h-8 px-3" onClick={handleSaveDesign} disabled={isSaving}>
               {isSaving ? <RotateCw className="h-3.5 w-3.5 animate-spin" /> : <BookmarkPlus className="h-3.5 w-3.5" />}
-              Save
+              <span className="hidden md:inline">Save</span>
             </Button>
-            <Button variant="outline" size="sm" className="gap-1.5 hidden sm:flex"
+            <Button variant="outline" size="sm" className="gap-1.5 hidden md:flex h-8 px-3"
               onClick={() => {
                 const customTee = { id: "custom-" + Date.now(), name: "Your Custom Design",
                   color: PALETTE.find(p => p.hex === shirtColor)?.name || "Custom", price: 1899,
@@ -670,9 +670,10 @@ export default function Customize() {
                 toast.success("Taking you to Gift Pack builder...");
                 router.push("/gift-packs");
               }}>
-              <Gift className="h-3.5 w-3.5" /> Gift Pack
+              <Gift className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline">Gift Pack</span>
             </Button>
-            <Button variant="hero" size="sm" className="gap-1.5"
+            <Button variant="hero" size="sm" className="gap-1.5 h-8 px-3 text-xs"
               onClick={() => {
                 const newItem = { id: Date.now(), name: "Custom T-Shirt Design",
                   slug: "custom-tshirt-" + Date.now(),
@@ -685,16 +686,18 @@ export default function Customize() {
                 toast.success("Added to cart!");
                 router.push("/cart");
               }}>
-              <ShoppingBag className="h-3.5 w-3.5" /> Add to Cart · ₹1,899
+              <ShoppingBag className="h-3.5 w-3.5" />
+              <span className="hidden xs:inline">Add to Cart</span>
+              <span className="hidden sm:inline"> · ₹1,899</span>
             </Button>
           </div>
         </div>
 
-        {/* Studio layout */}
+        {/* ── Studio body ── */}
         <div className="flex flex-1 overflow-hidden">
 
-          {/* ── Left icon rail ── */}
-          <div className="flex flex-col items-center gap-1 w-16 border-r border-border bg-card py-3 shrink-0">
+          {/* ── Left icon rail — desktop only ── */}
+          <div className="hidden md:flex flex-col items-center gap-1 w-16 border-r border-border bg-card py-3 shrink-0">
             {SIDE_TABS.map(({ id, icon: Icon, label }) => (
               <button
                 key={id}
@@ -711,7 +714,7 @@ export default function Customize() {
             ))}
           </div>
 
-          {/* ── Left panel ── */}
+          {/* ── Left panel — desktop only ── */}
           <div className="w-72 border-r border-border bg-card overflow-y-auto shrink-0 hidden md:block">
             <div className="p-4">
               {renderPanel()}
@@ -719,13 +722,15 @@ export default function Customize() {
           </div>
 
           {/* ── 3D Viewport ── */}
-          <div className="flex-1 flex flex-col items-center justify-center relative"
-            style={{ background: "radial-gradient(ellipse at 55% 35%, #e8e1fa 0%, #f0ecfc 45%, #e4dff5 100%)" }}>
-
+          <div
+            className="flex-1 relative overflow-hidden"
+            style={{ background: "radial-gradient(ellipse at 55% 35%, #e8e1fa 0%, #f0ecfc 45%, #e4dff5 100%)" }}
+          >
             <div className="absolute inset-0 pointer-events-none"
               style={{ background: "radial-gradient(70% 60% at 50% 40%, rgba(124,58,237,0.06) 0%, transparent 70%)" }} />
 
-            <div className="relative w-full h-full">
+            {/* Viewer — leave bottom space for mobile panel */}
+            <div className="absolute inset-0 md:inset-0" style={{ bottom: 0 }}>
               <Viewer
                 shirtType={shirtType}
                 color={shirtColor}
@@ -737,8 +742,6 @@ export default function Customize() {
                 onInteract={() => setAutoRotate(false)}
                 onResetRef={resetCameraRef}
               />
-
-      {/* Drag overlay — sits on top of the 3D canvas */}
               <DesignDragOverlay
                 imgPos={imgPos}
                 textPos={textPos}
@@ -757,7 +760,7 @@ export default function Customize() {
             </div>
 
             {/* Front / Back toggle */}
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white/80 backdrop-blur rounded-full p-1 shadow-soft z-20">
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white/80 backdrop-blur rounded-full p-1 shadow-soft z-20">
               <button
                 onClick={() => { setViewSide("front"); setAutoRotate(false); }}
                 className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${viewSide === "front" ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
@@ -772,51 +775,56 @@ export default function Customize() {
               </button>
             </div>
 
-            {/* Viewer controls */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white/80 backdrop-blur rounded-full px-4 py-2 shadow-soft z-10">
-              <span className="text-xs text-foreground/60 font-medium">Drag handles to reposition · Scroll to zoom</span>
-            </div>
-
+            {/* Reset camera */}
             <button
               onClick={() => { resetCameraRef.current?.(); setAutoRotate(true); }}
-              className="absolute top-4 right-4 h-9 w-9 grid place-items-center rounded-full bg-white/80 backdrop-blur shadow-soft hover:bg-white transition-smooth z-20"
+              className="absolute top-3 right-3 h-8 w-8 grid place-items-center rounded-full bg-white/80 backdrop-blur shadow-soft hover:bg-white transition-smooth z-20"
               aria-label="Reset view"
             >
-              <RotateCw className="h-4 w-4 text-primary" />
+              <RotateCw className="h-3.5 w-3.5 text-primary" />
             </button>
 
-            {/* AI ideas button */}
+            {/* Hint — hidden on very small screens */}
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 hidden sm:flex items-center gap-2 bg-white/80 backdrop-blur rounded-full px-3 py-1.5 shadow-soft z-10">
+              <span className="text-[11px] text-foreground/60 font-medium whitespace-nowrap">Drag handles · Scroll to zoom</span>
+            </div>
+
+            {/* AI ideas */}
             <button
               onClick={() => toast("AI design suggestions coming soon ✨")}
-              className="absolute bottom-4 right-4 flex items-center gap-1.5 bg-white/80 backdrop-blur rounded-full px-3 py-1.5 text-xs font-semibold text-primary shadow-soft hover:bg-white transition-smooth z-10"
+              className="absolute bottom-3 right-3 flex items-center gap-1 bg-white/80 backdrop-blur rounded-full px-2.5 py-1.5 text-[11px] font-semibold text-primary shadow-soft hover:bg-white transition-smooth z-10"
             >
-              <Sparkles className="h-3.5 w-3.5" /> AI Ideas
+              <Sparkles className="h-3 w-3" /> AI
             </button>
           </div>
+        </div>
 
-          {/* ── Mobile bottom panel ── */}
-          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-30">
-            {/* Tab bar */}
-            <div className="flex border-b border-border">
-              {SIDE_TABS.map(({ id, icon: Icon, label }) => (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
-                  className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition-smooth ${
-                    activeTab === id ? "text-primary border-t-2 border-primary" : "text-muted-foreground"
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {label}
-                </button>
-              ))}
-            </div>
-            {/* Collapsed panel */}
-            <div className="p-3 max-h-48 overflow-y-auto">
-              {renderPanel()}
-            </div>
+        {/* ── Mobile bottom panel ── */}
+        <div className="md:hidden flex flex-col border-t border-border bg-card shrink-0" style={{ maxHeight: "45vh" }}>
+          {/* Tab bar */}
+          <div className="flex border-b border-border shrink-0">
+            {SIDE_TABS.map(({ id, icon: Icon, label }) => (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition-smooth relative ${
+                  activeTab === id ? "text-primary" : "text-muted-foreground"
+                }`}
+              >
+                {activeTab === id && (
+                  <span className="absolute top-0 left-0 right-0 h-0.5 bg-primary rounded-b" />
+                )}
+                <Icon className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+          {/* Panel content */}
+          <div className="flex-1 overflow-y-auto p-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            {renderPanel()}
           </div>
         </div>
+
       </main>
     </div>
   );
