@@ -188,6 +188,11 @@ const Checkout = () => {
         body: JSON.stringify({
           amount:  totals.total,
           receipt: `rcpt_${Date.now()}`,
+          // Store full payload so webhook can create order if popup closes
+          payload: {
+            ...orderPayload,
+            payment: { method: payMethod },
+          },
         }),
       });
       const rzpOrderJson = await rzpOrderRes.json();
@@ -196,9 +201,14 @@ const Checkout = () => {
       const { orderId, amount, currency } = rzpOrderJson.data;
 
       // ── Open Razorpay checkout popup ───────────────────────────────────
+      const rzpKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+      if (!rzpKey) {
+        throw new Error("Payment gateway not configured. Please contact support.");
+      }
+
       await new Promise<void>((resolve, reject) => {
         const rzp = new window.Razorpay({
-          key:         process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
+          key: rzpKey,
           amount,
           currency,
           name:        "LemmeWear",
@@ -244,6 +254,7 @@ const Checkout = () => {
 
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Payment failed";
+      console.error("[Checkout] Payment error:", msg);
       if (msg !== "Payment cancelled") {
         router.push("/payment-failed");
       } else {

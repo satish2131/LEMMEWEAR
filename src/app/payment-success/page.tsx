@@ -9,26 +9,27 @@ export default function PaymentSuccessPage() {
 
   useEffect(() => {
     document.title = "Payment Successful — LemmeWear";
+  }, []);
 
-    const interval = setInterval(() => {
-      setCountdown((c) => {
-        if (c <= 1) {
-          clearInterval(interval);
-          router.replace("/order-confirmation");
-          return 0;
-        }
-        return c - 1;
-      });
-    }, 1000);
+  // Tick the countdown
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [countdown]);
 
-    return () => clearInterval(interval);
-  }, [router]);
+  // Navigate only when countdown reaches 0 — outside the state updater
+  useEffect(() => {
+    if (countdown === 0) {
+      router.replace("/order-confirmation");
+    }
+  }, [countdown, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center gradient-hero">
       <div className="text-center px-6 animate-fade-up">
         {/* Success icon */}
-        <div className="inline-flex h-24 w-24 items-center justify-center rounded-full gradient-primary shadow-glow mb-6 animate-bounce-once">
+        <div className="inline-flex h-24 w-24 items-center justify-center rounded-full gradient-primary shadow-glow mb-6">
           <CheckCircle2 className="h-12 w-12 text-white" />
         </div>
 

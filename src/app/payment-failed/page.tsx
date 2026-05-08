@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { XCircle, Loader2, RefreshCw, MessageCircle } from "lucide-react";
+import { XCircle, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function PaymentFailedPage() {
@@ -10,20 +10,21 @@ export default function PaymentFailedPage() {
 
   useEffect(() => {
     document.title = "Payment Failed — LemmeWear";
+  }, []);
 
-    const interval = setInterval(() => {
-      setCountdown((c) => {
-        if (c <= 1) {
-          clearInterval(interval);
-          router.replace("/checkout");
-          return 0;
-        }
-        return c - 1;
-      });
-    }, 1000);
+  // Tick the countdown
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [countdown]);
 
-    return () => clearInterval(interval);
-  }, [router]);
+  // Navigate only when countdown reaches 0 — outside the state updater
+  useEffect(() => {
+    if (countdown === 0) {
+      router.replace("/checkout");
+    }
+  }, [countdown, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -43,19 +44,10 @@ export default function PaymentFailedPage() {
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
-          <Button
-            variant="hero"
-            className="gap-2"
-            onClick={() => router.replace("/checkout")}
-          >
-            <RefreshCw className="h-4 w-4" />
-            Try Again
+          <Button variant="hero" className="gap-2" onClick={() => router.replace("/checkout")}>
+            <RefreshCw className="h-4 w-4" /> Try Again
           </Button>
-          <Button
-            variant="outline"
-            className="gap-2"
-            onClick={() => router.replace("/")}
-          >
+          <Button variant="outline" className="gap-2" onClick={() => router.replace("/")}>
             Back to Home
           </Button>
         </div>
