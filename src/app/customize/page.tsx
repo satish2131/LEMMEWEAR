@@ -405,6 +405,7 @@ export default function Customize() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userEmail: user.email,
+          userName:  user.name,
           name: text.trim() || "My Custom Design",
           preview: preview || "/assets/hero-tshirt.jpg",
           config: { text, backText, font, textColor, shirtColor, textScale,

@@ -5,25 +5,49 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 
 export default function PaymentSuccessPage() {
   const router = useRouter();
-  const [countdown, setCountdown] = useState(3);
+  const [countdown, setCountdown] = useState(4);
+  const [status, setStatus] = useState<"waiting" | "ready">("waiting");
 
   useEffect(() => {
     document.title = "Payment Successful — LemmeWear";
   }, []);
 
-  // Tick the countdown
+  // Poll for order number — webhook may take a few seconds to fire
   useEffect(() => {
+    let attempts = 0;
+    const maxAttempts = 20; // poll for up to 20s
+
+    const poll = setInterval(() => {
+      attempts++;
+      const orderNumber = sessionStorage.getItem("lastOrderNumber");
+      if (orderNumber) {
+        setStatus("ready");
+        clearInterval(poll);
+      }
+      if (attempts >= maxAttempts) {
+        clearInterval(poll);
+        // Give up polling — redirect anyway, order-confirmation will handle it
+        setStatus("ready");
+      }
+    }, 1000);
+
+    return () => clearInterval(poll);
+  }, []);
+
+  // Countdown tick
+  useEffect(() => {
+    if (status !== "ready") return;
     if (countdown <= 0) return;
     const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
     return () => clearTimeout(t);
-  }, [countdown]);
+  }, [countdown, status]);
 
-  // Navigate only when countdown reaches 0 — outside the state updater
+  // Navigate when countdown hits 0
   useEffect(() => {
-    if (countdown === 0) {
+    if (status === "ready" && countdown === 0) {
       router.replace("/order-confirmation");
     }
-  }, [countdown, router]);
+  }, [countdown, status, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center gradient-hero">
@@ -38,14 +62,20 @@ export default function PaymentSuccessPage() {
           Your payment has been confirmed. Your order is being prepared.
         </p>
 
-        {/* Countdown */}
-        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin text-primary" />
-          <span>
-            Redirecting to order confirmation in{" "}
-            <span className="font-bold text-primary">{countdown}</span>s...
-          </span>
-        </div>
+        {status === "waiting" ? (
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span>Confirming your order...</span>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span>
+              Redirecting in{" "}
+              <span className="font-bold text-primary">{countdown}</span>s...
+            </span>
+          </div>
+        )}
 
         <button
           onClick={() => router.replace("/order-confirmation")}

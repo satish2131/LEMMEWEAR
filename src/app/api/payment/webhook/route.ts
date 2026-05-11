@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     const event = JSON.parse(rawBody);
     console.log(`[Webhook] Event: ${event.event}`);
 
-    if (event.event !== "payment.captured") {
+    if (event.event !== "payment.captured" && event.event !== "payment.authorized") {
       // Acknowledge but don't process other events
       return new Response("OK", { status: 200 });
     }

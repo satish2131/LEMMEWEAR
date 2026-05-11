@@ -2,19 +2,13 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface ISavedDesign extends Document {
   userEmail: string;
+  userName: string;
   name: string;
-  preview: string; // base64 or URL of the design preview
-  config: {
-    shirtColor: string;
-    shirtStyle: string;
-    frontText?: string;
-    backText?: string;
-    frontImage?: string;
-    backImage?: string;
-    fontFamily?: string;
-    fontSize?: number;
-    textColor?: string;
-  };
+  preview: string;
+  config: Record<string, unknown>;
+  isPublic: boolean;
+  likes: number;
+  likedBy: string[]; // array of user emails
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,23 +16,15 @@ export interface ISavedDesign extends Document {
 const SavedDesignSchema = new Schema<ISavedDesign>(
   {
     userEmail: { type: String, required: true, index: true },
-    name: { type: String, required: true },
-    preview: { type: String, default: "" },
-    config: {
-      shirtColor: { type: String, default: "#ffffff" },
-      shirtStyle: { type: String, default: "crew-neck" },
-      frontText: { type: String },
-      backText: { type: String },
-      frontImage: { type: String },
-      backImage: { type: String },
-      fontFamily: { type: String },
-      fontSize: { type: Number },
-      textColor: { type: String },
-    },
+    userName:  { type: String, default: "Designer" },
+    name:      { type: String, required: true },
+    preview:   { type: String, default: "" },
+    config:    { type: Schema.Types.Mixed, default: {} },
+    isPublic:  { type: Boolean, default: false, index: true },
+    likes:     { type: Number, default: 0 },
+    likedBy:   { type: [String], default: [] },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 const SavedDesign: Model<ISavedDesign> =
